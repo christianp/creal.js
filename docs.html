@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Class: CReal</title>
+</head>
+
+<body>
+	<div id="main">
+		<h1 class="page-title">Class: CReal</h1>
+		
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>CReal</h2>
+        
+            <div class="class-description"><p>Constructive real numbers, also known as recursive, or computable reals.
+Each recursive real number is represented as an object that provides an
+approximation function for the real number.
+The approximation function guarantees that the generated approximation
+is accurate to the specified precision.
+Arithmetic operations on constructive reals produce new such objects;
+they typically do not perform any real computation.
+In this sense, arithmetic computations are exact: They produce
+a description which describes the exact answer, and can be used to
+later approximate it to arbitrary precision.</p>
+<p>When approximations are generated, e.g. for output, they are
+accurate to the requested precision; no cumulative rounding errors
+are visible.
+In order to achieve this precision, the approximation function will often
+need to approximate subexpressions to greater precision than was originally
+demanded.  Thus the approximation of a constructive real number
+generated through a complex sequence of operations may eventually require
+evaluation to very high precision.  This usually makes such computations
+prohibitively expensive for large numerical problems.
+But it is perfectly appropriate for use in a desk calculator,
+for small numerical problems, for the evaluation of expressions
+computated by a symbolic algebra system, for testing of accuracy claims
+for floating point code on small inputs, or the like.</p>
+<p>We expect that the vast majority of uses will ignore the particular
+implementation, and the member functons <code>approximate</code>
+and <code>get_appr</code>.  Such applications will treat <code>CReal</code> as
+a conventional numerical type, with an interface modelled on
+<code>java.math.BigInteger</code>.  No subclasses of <code>CReal</code>
+will be explicitly mentioned by such a program.</p>
+<p>All standard arithmetic operations, as well as a few algebraic
+and transcendal functions are provided.  Constructive reals are
+immutable; thus all of these operations return a new constructive real.</p>
+<p>A few uses will require explicit construction of approximation functions.
+The requires the construction of a subclass of <code>CReal</code> with
+an overridden <code>approximate</code> function.  Note that <code>approximate</code>
+should only be defined, but never called.  <code>get_appr</code>
+provides the same functionality, but adds the caching necessary to obtain
+reasonable performance.</p>
+<p>Any operation may also throw an exception if the precision request generated
+during any subcalculation overflows a 28-bit integer.  (This should be
+extremely unlikely, except as an outcome of a division by zero, or other
+erroneous computation.)</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+		
+			
+
+	
+
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+    </div>
+
+    
+
+    
+
+	
+
+	
+	<nav class="toc">
+		<h3>Table of contents</h3>
+		<div class="toc-sections">
+			
+
+			
+
+			
+				<div class="toc-section">
+					<h4>Members</h4>
+					<ul>
+					
+						<li class="name"><a href="CReal.html#.E">E</a></li>
+					
+						<li class="name"><a href="CReal.html#.ln2">ln2</a></li>
+					
+						<li class="name"><a href="CReal.html#.ONE">ONE</a></li>
+					
+						<li class="name"><a href="CReal.html#.PI">PI</a></li>
+					
+						<li class="name"><a href="CReal.html#.ZERO">ZERO</a></li>
+					
+					</ul>
+				</div>
+			
+
+			
+				<div class="toc-section">
+					<h4>Methods</h4>
+					<ul>
+					
+						<li class="name"><a href="CReal.html#.atan_reciprocal">atan_reciprocal</a></li>
+					
+						<li class="name"><a href="CReal.html#.valueOf">valueOf</a></li>
+					
+						<li class="name"><a href="CReal.html#abs">abs</a></li>
+					
+						<li class="name"><a href="CReal.html#acos">acos</a></li>
+					
+						<li class="name"><a href="CReal.html#add">add</a></li>
+					
+						<li class="name"><a href="CReal.html#asin">asin</a></li>
+					
+						<li class="name"><a href="CReal.html#assumeInt">assumeInt</a></li>
+					
+						<li class="name"><a href="CReal.html#BigIntValue">BigIntValue</a></li>
+					
+						<li class="name"><a href="CReal.html#compareTo">compareTo</a></li>
+					
+						<li class="name"><a href="CReal.html#cos">cos</a></li>
+					
+						<li class="name"><a href="CReal.html#divide">divide</a></li>
+					
+						<li class="name"><a href="CReal.html#exp">exp</a></li>
+					
+						<li class="name"><a href="CReal.html#floatValue">floatValue</a></li>
+					
+						<li class="name"><a href="CReal.html#get_appr">get_appr</a></li>
+					
+						<li class="name"><a href="CReal.html#intValue">intValue</a></li>
+					
+						<li class="name"><a href="CReal.html#inverse">inverse</a></li>
+					
+						<li class="name"><a href="CReal.html#ln">ln</a></li>
+					
+						<li class="name"><a href="CReal.html#max">max</a></li>
+					
+						<li class="name"><a href="CReal.html#min">min</a></li>
+					
+						<li class="name"><a href="CReal.html#msd">msd</a></li>
+					
+						<li class="name"><a href="CReal.html#multiply">multiply</a></li>
+					
+						<li class="name"><a href="CReal.html#negate">negate</a></li>
+					
+						<li class="name"><a href="CReal.html#select">select</a></li>
+					
+						<li class="name"><a href="CReal.html#shiftLeft">shiftLeft</a></li>
+					
+						<li class="name"><a href="CReal.html#shiftRight">shiftRight</a></li>
+					
+						<li class="name"><a href="CReal.html#signum">signum</a></li>
+					
+						<li class="name"><a href="CReal.html#sin">sin</a></li>
+					
+						<li class="name"><a href="CReal.html#sqrt">sqrt</a></li>
+					
+						<li class="name"><a href="CReal.html#subtract">subtract</a></li>
+					
+						<li class="name"><a href="CReal.html#toString">toString</a></li>
+					
+						<li class="name"><a href="CReal.html#toStringFloatRep">toStringFloatRep</a></li>
+					
+					</ul>
+				</div>
+			
+
+			
+
+			
+		</div>
+	</nav>
+	
+
+    
+		<div class="subsection">
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<div class="item member">
+<h4 class="name" id=".E"><span class="type-signature">(static) </span>E<span class="type-signature"> :<a href="CReal.html">CReal</a></span></h4>
+
+
+
+
+<div class="description">
+    <p>The base of the natural logarithm.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+        
+            
+<div class="item member">
+<h4 class="name" id=".ln2"><span class="type-signature">(static) </span>ln2<span class="type-signature"> :<a href="CReal.html">CReal</a></span></h4>
+
+
+
+
+<div class="description">
+    <p>Natural log of 2.</p>
+<p><code>ln(2) = 7*ln(10/9) - 2*ln(25/24) + 3*ln(81/80)</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+        
+            
+<div class="item member">
+<h4 class="name" id=".ONE"><span class="type-signature">(static) </span>ONE<span class="type-signature"> :<a href="CReal.html">CReal</a></span></h4>
+
+
+
+
+<div class="description">
+    <p>One.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+        
+            
+<div class="item member">
+<h4 class="name" id=".PI"><span class="type-signature">(static) </span>PI<span class="type-signature"> :<a href="CReal.html">CReal</a></span></h4>
+
+
+
+
+<div class="description">
+    <p>The ratio of a circle's circumference to its diameter.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+        
+            
+<div class="item member">
+<h4 class="name" id=".ZERO"><span class="type-signature">(static) </span>ZERO<span class="type-signature"> :<a href="CReal.html">CReal</a></span></h4>
+
+
+
+
+<div class="description">
+    <p>Zero.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+        
+		</div>
+    
+
+    
+		<div class="subsection">
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id=".atan_reciprocal"><span class="type-signature">(static) </span>atan_reciprocal<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Atan of integer reciprocal: atan(1/n).</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id=".valueOf"><span class="type-signature">(static) </span>valueOf<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{number, string}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Construct a CReal from a number or string.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="abs"><span class="type-signature"></span>abs<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The absolute value of a constructive real.
+Note that this cannot be written as a conditional.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="acos"><span class="type-signature"></span>acos<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The trigonometric arc (incerse) cosine function.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="add"><span class="type-signature"></span>add<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Add two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="asin"><span class="type-signature"></span>asin<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The trigonometric arc (inverse) sine function.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="assumeInt"><span class="type-signature"></span>assumeInt<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Produce a constructive real equivalent to the original, assuming the original was an integer.
+Undefined results if the original was not an integer.
+Prevents evaluation of digits to the right of the decimal point, and may thus improve performance.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="BigIntValue"><span class="type-signature"></span>BigIntValue<span class="signature">()</span><span class="type-signature"> &rarr; {BigInt}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return a BigInt which differs by less than one from the constructive real.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="compareTo"><span class="type-signature"></span>compareTo<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>, r&nbsp;:&nbsp;<span class="type-signature">{integer}</span>, a&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return <code>0</code> if <code>x = y</code> to within the indicated tolerance,
+<code>-1</code> if <code>x &lt; y</code>, and <code>+1</code> if <code>x &gt; y</code>.  If <code>x</code> and <code>y</code> are indeed
+equal, it is guaranteed that <code>0</code> will be returned.  If
+they differ by less than the tolerance, anything
+may happen.  The tolerance allowed is
+the maximum of <code>(abs(this)+abs(x))*(2**r)</code> and <code>2**a</code></p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="cos"><span class="type-signature"></span>cos<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The trigonometric cosine function.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="divide"><span class="type-signature"></span>divide<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The quotient of two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="exp"><span class="type-signature"></span>exp<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The exponential function, that is <code>e**this</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="floatValue"><span class="type-signature"></span>floatValue<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return a float which differs by less than one in the least represented bit from the constructive real.
+(We're in fact closer to round-to-nearest than that, but we can't and don't promise correct rounding.)</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="get_appr"><span class="type-signature"></span>get_appr<span class="signature">(precision&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {BigInt}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Returns <code>value / 2 ** precision</code> rounded to an integer.
+The error in the result is strictly less than 1.
+Produces the same answer as <code>approximate</code>, but uses and maintains a cached approximation.
+Normally not overridden, and called only from <code>approximate</code> methods in subclasses.
+Not needed if the provided operations on constructive reals suffice.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="intValue"><span class="type-signature"></span>intValue<span class="signature">()</span><span class="type-signature"> &rarr; {integer}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return an integer which differs by less than one from the constructive real.
+Behaviour on overflow is undefined.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="inverse"><span class="type-signature"></span>inverse<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The multiplicative inverse of a constructive real.
+<code>x.inverse()</code> is equivalent to <code>CReal.valueOf(1).divide(x)</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="ln"><span class="type-signature"></span>ln<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The natural (base e) logarithm.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="max"><span class="type-signature"></span>max<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The maximum of two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="min"><span class="type-signature"></span>min<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The minimum of two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="msd"><span class="type-signature"></span>msd<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {integer}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return ths position of the most significant digit (msd) - this version may return <code>Number.MIN_SAFE_INTEGER</code> if the correct answer is <code>&lt; n</code>.</p>
+<p>If <code>n</code> is not given, it uses <code>iter_msd</code> to eventually return a correct answer, unless the constructive real is zero, when it either loops forever or throws a precision overflow error.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="multiply"><span class="type-signature"></span>multiply<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The produce of two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="negate"><span class="type-signature"></span>negate<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The additive inverse of a constructive real.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="select"><span class="type-signature"></span>select<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>, y&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The real number <code>x</code> if <code>this &lt; 0</code>, or <code>y</code> otherwise.
+Requires <code>x = y</code> if <code>this = 0</code>.
+Since comparisons may diverge, this is often a useful alternative to conditionals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="shiftLeft"><span class="type-signature"></span>shiftLeft<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Multiply a constructive real by <code>2 ** n</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="shiftRight"><span class="type-signature"></span>shiftRight<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Multiply a constructive real by <code>2 ** -n</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="signum"><span class="type-signature"></span>signum<span class="signature">(a<span class="signature-attributes">opt</span>&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {integer}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return <code>-1</code> if negative, <code>+1</code> if positive.
+Should be called only if <code>this != 0</code>.
+In the 0 case, this will not terminate correctly; typically it will run until it exhausts memory.
+If the two constructive reals may be equal, the one or two argument version of signum should be used.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="sin"><span class="type-signature"></span>sin<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The trigonometric sine function.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="sqrt"><span class="type-signature"></span>sqrt<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The square root of a constructive real.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="subtract"><span class="type-signature"></span>subtract<span class="signature">(x&nbsp;:&nbsp;<span class="type-signature">{<a href="CReal.html">CReal</a>}</span>)</span><span class="type-signature"> &rarr; {<a href="CReal.html">CReal</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>The difference between two constructive reals.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="toString"><span class="type-signature"></span>toString<span class="signature">(n<span class="signature-attributes">opt</span>&nbsp;:&nbsp;<span class="type-signature">{integer}</span>, radix<span class="signature-attributes">opt</span>&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return a textual representation accurate to <code>n</code> places to the right of the decimal point.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// returns "3.141"
+CReal.PI.toString(3)</code></pre>
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+            
+
+	
+		<div class="item function">
+	
+
+    
+    <h4 class="name" id="toStringFloatRep"><span class="type-signature"></span>toStringFloatRep<span class="signature">(n&nbsp;:&nbsp;<span class="type-signature">{integer}</span>, radix&nbsp;:&nbsp;<span class="type-signature">{integer}</span>, m&nbsp;:&nbsp;<span class="type-signature">{integer}</span>)</span><span class="type-signature"> &rarr; {StringFloatRep}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Return a textual scientific notation representation accurate to <code>n</code> places to the right of the decimal point.
+<code>n</code> must be non-negative.
+A value smaller than <code>radix**-m</code> may be displayed as 0.
+The <code>mantissa</code> component of the result is either &quot;0&quot; or exactly <code>n</code> digits long.
+The <code>sign</code> component is zero exactly when the mantissa is &quot;0&quot;.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	</div>
+
+
+        
+		</div>
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+	</div>
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.4</a>
+</footer>
+
+</body>
+</html>
