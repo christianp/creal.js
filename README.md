@@ -28,4 +28,4 @@ const one_seventh = CReal.valueOf(7).inverse();
 console.log(one_seventh.toString(20));
 ```
 
-See [docs.html](docs.html) for full documentation.
+See [the full documentation](https://christianp.github.io/creal.js/).
