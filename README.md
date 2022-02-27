@@ -2,7 +2,7 @@
 
 Constructive real numbers for JavaScript.
 
-Ported from Hans Boehm's Java implementation to JavaScript by Christian Lawson-Perfect.
+Ported from Hans-J. Boehm's Java implementation to JavaScript by Christian Lawson-Perfect.
 
 Each recursive real number is represented as an object that provides an approximation function for the real number.
 The approximation function guarantees that the generated approximation is accurate to the specified precision.

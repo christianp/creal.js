@@ -473,9 +473,9 @@ class CReal {
      * The `mantissa` component of the result is either "0" or exactly `n` digits long. 
      * The `sign` component is zero exactly when the mantissa is "0".
      *
-     * @param {integer} n - Numbas of digits (>0) included to the right of the decimal point.
+     * @param {integer} n - Number of digits (>0) included to the right of the decimal point.
      * @param {integer} radix - The base (between 2 and 16) for the resulting representation.
-     * @param {integer} m - The precision used to distinguish the number from zero. Expressed as a power of `m`.
+     * @param {integer} m - The precision used to distinguish the number from zero. Expressed as a power of `radix`.
      * @returns {StringFloatRep}
      */
     toStringFloatRep(n, radix, m) {
@@ -484,7 +484,7 @@ class CReal {
         }
         const log2_radix = Math.log(radix) / Math.log(2);
         const big_radix = BigInt(radix);
-        const msd_prec = (log2_radix * m);
+        const msd_prec = Math.round(log2_radix * m);
         if(msd_prec > Number.MAX_SAFE_INTEGER || msd_prec < Number.MIN_SAFE_INTEGER) {
             throw new Error("precision overflow");
         }
@@ -498,7 +498,7 @@ class CReal {
                 exponent: 0
             };
         }
-        const exponent = Math.ceil(msd/log2_radix);
+        let exponent = Math.ceil(msd/log2_radix);
         const scale_exp = exponent - n;
         let scale;
         if(scale_exp > 0) {
@@ -525,7 +525,7 @@ class CReal {
         }
         return {
             sign,
-            mantissa: scaled_string.
+            mantissa: scaled_string,
             radix,
             exponent
         };
@@ -726,6 +726,15 @@ class CReal {
         } else {
             return new prescaled_exp_CReal(this);
         }
+    }
+
+    /** To the power of x.
+     *
+     * @param {CReal} x
+     * @returns {CReal}
+     */
+    pow(x) {
+        return x.multiply(this.ln()).exp();
     }
 
     /** The trigonometric cosine function.
