@@ -109,6 +109,25 @@ const bigIntMath = {
     }
 }
 
+class Timeout {
+    counter = 0;
+
+    constructor() {
+        this.counter = 0;
+        this.start = new Date();
+    }
+    check() {
+        this.counter += 1;
+        if(this.counter % 100 == 0) {
+            const t = new Date();
+            const dt = t - this.start;
+            if(dt > CReal.TIMEOUT_DURATION) {
+                throw new Error(`Operation took too long: ${dt}`);
+            }
+        }
+    }
+}
+
 /**
  * Constructive real numbers, also known as recursive, or computable reals.
  * Each recursive real number is represented as an object that provides an
@@ -162,6 +181,13 @@ class CReal {
     min_prec = null;
     max_appr = null;
     appr_valid = false;
+
+    /** The maximum amount of time to allow an operation to run for, in milliseconds.
+     *  Nested operations get different timers, so evaluating a single number might take longer than this.
+     *
+     *  @type {number}
+     */
+    static TIMEOUT_DURATION = 3000;
 
     approximate(precision) {
         throw new Error("approximate not implemented");
@@ -513,7 +539,9 @@ class CReal {
         let scaled_int = scaled_res.get_appr(0);
         let sign = bigIntMath.signum(scaled_int);
         let scaled_string = bigIntMath.abs(scaled_int).toString(radix);
+        const timeout = new Timeout();
         while(scaled_string.length<n) {
+            timeout.check();
             // Exponent was too large. Adjust.
             scaled_res = scaled_res.multiply(CReal.valueOf(big_radix));
             exponent -= 1;
@@ -1135,16 +1163,18 @@ class prescaled_exp_CReal extends CReal {
         if(p >= 1) {
             return 0n;
         }
-        const iterations_needed = Math.floor(-p/2 + 2);
+        const iterations_needed = Math.floor(-p/2) + 2;
         const calc_precision = p - CReal.bound_log2(2*iterations_needed);
         const op_prec = p - 3;
         const op_appr = this.op.get_appr(op_prec);
-        const scaled_1 = 1n << (-BigInt(calc_precision));
+        const scaled_1 = 1n << BigInt(-calc_precision);
         let current_term = scaled_1;
         let current_sum = scaled_1;
         let n = 0n;
         const max_trunc_error = 1n << BigInt(p - 4 - calc_precision);
-        while(bigIntMath.abs(current_term) >= max_trunc_error) {
+        const timeout = new Timeout();
+        while(bigIntMath.abs(current_term) >= max_trunc_error && max_trunc_error > 0) {
+            timeout.check();
             n += 1n;
             current_term = CReal.scale(current_term * op_appr, op_prec) / n;
             current_sum += current_term;
@@ -1186,7 +1216,9 @@ class prescaled_cos_CReal extends slow_CReal {
         let n = 0n;
         let current_term = 1n << BigInt(-calc_precision);
         let current_sum = current_term;
+        const timeout = new Timeout();
         while(bigIntMath.abs(current_term) >= max_trunc_error) {
+            timeout.check();
             n += 2n;
             current_term = CReal.scale(current_term * op_appr, op_prec);
             current_term = CReal.scale(current_term * op_appr, op_prec);
@@ -1238,7 +1270,9 @@ class integral_atan_CReal extends slow_CReal {
         let current_sign = 1n;
         let n = 1n;
         let max_trunc_error = 1n << BigInt(p - 2 - calc_precision);
+        const timeout = new Timeout();
         while(bigIntMath.abs(current_term) >= max_trunc_error) {
+            timeout.check();
             n += 2n;
             current_power = current_power / big_op_squared;
             current_sign = -current_sign;
@@ -1289,7 +1323,9 @@ class prescaled_ln_CReal extends slow_CReal {
         let n = 1n;
         let current_sign = 1n;
         const max_trunc_error = 1n << BigInt(p - 4 - calc_precision);
+        const timeout = new Timeout();
         while(bigIntMath.abs(current_term) >= max_trunc_error) {
+            timeout.check();
             n += 1n;
             current_sign = -current_sign;
             x_nth = CReal.scale(x_nth * op_appr, op_prec);
@@ -1360,7 +1396,9 @@ class prescaled_asin_CReal extends slow_CReal {
                             // Current scaled Taylor series term
                             // before division by the exponent.
                             // Accurate to 3 ulp at calc_precision.
+        const timeout = new Timeout();
         while(bigIntMath.abs(current_term) >= max_last_term) {
+            timeout.check();
             exp += 2n;
             // current_factor = current_factor * op * op * (exp-1) * (exp-2) /
             // (exp-1) * (exp-1), with the two exp-1 factors cancelling,
@@ -1602,7 +1640,9 @@ class gl_pi_CReal extends slow_CReal {
         let b = gl_pi_CReal.SQRT_HALF.get_appr(eval_prec);
         let t = 1n << BigInt(-eval_prec - 2);
         let n = 0;
+        const timeout = new Timeout();
         while(a - b - gl_pi_CReal.TOLERANCE > 0) {
+            timeout.check();
             // Current values correspond to n, next_ values to n + 1
             // b_prec.size() == b_val.size() >= n + 1
             const next_a = (a + b) >> 1n;
@@ -1660,5 +1700,7 @@ CReal.half_pi = CReal.PI.shiftRight(1);
 CReal.low_ln_limit = 8n;   // sixteenths, i.e. 1/2
 CReal.high_ln_limit = 16n + 8n;    // 1.5
 CReal.scaled_4 = 4n * 16n;
+
+CReal.Timeout = Timeout;
 
 export default CReal;
