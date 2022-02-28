@@ -375,7 +375,7 @@ class CReal {
         } else {
             for(a = -20; ; a *= 2) {
                 CReal.check_prec(a);
-                let result = CReal.compareTo(x,a);
+                let result = this.compareTo(x,a);
                 if(result != 0) {
                     return result;
                 }
