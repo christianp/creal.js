@@ -956,6 +956,10 @@ class neg_CReal extends CReal {
         this.op = x;
     }
 
+    negate() {
+        return this.op;
+    }
+
     approximate(p) {
         return -this.op.get_appr(p);
     }
