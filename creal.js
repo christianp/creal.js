@@ -436,6 +436,9 @@ class CReal {
             scaled_CReal = this.multiply(new int_CReal(scale_factor));
         }
         const scaled_int = scaled_CReal.get_appr(0);
+        if(scaled_int < 0n) {
+            return '-'+this.negate().toString();
+        }
         let scaled_string = bigIntMath.abs(scaled_int).toString(radix);
         let result;
         if(n == 0) {
