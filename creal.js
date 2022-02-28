@@ -217,7 +217,7 @@ class CReal {
             return k << BigInt(n);
         } else {
             const adj_k = CReal.shift(k, n+1) + 1n;
-            return adj_k / 2n;
+            return adj_k >> 1n;
         }
     }
 
