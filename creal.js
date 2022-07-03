@@ -463,7 +463,7 @@ class CReal {
         }
         const scaled_int = scaled_CReal.get_appr(0);
         if(scaled_int < 0n) {
-            return '-'+this.negate().toString();
+            return '-'+this.negate().toString(n, radix);
         }
         let scaled_string = bigIntMath.abs(scaled_int).toString(radix);
         let result;
