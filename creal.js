@@ -182,6 +182,70 @@ class CReal {
     max_appr = null;
     appr_valid = false;
 
+    static deserialize(expr) {
+        function unary(cls) {
+            return () => new cls(stack.pop());
+        }
+        function binary(cls) {
+            return () => {
+                const b = stack.pop();
+                const a = stack.pop();
+                return new cls(a,b);
+            }
+        }
+
+        const codes = {
+            'i': unary(int_CReal),
+            'assumed_int': unary(assumed_int_CReal),
+            '+': binary(add_CReal),
+            '<': () => {
+                const b = stack.pop();
+                const a = stack.pop();
+                return new shifted_CReal(a, Number(b));
+            },
+            '-': unary(neg_CReal),
+            'select': () => new select_CReal(stack.pop(), stack.pop(), stack.pop()),
+            '*': binary(mult_CReal),
+            '÷': binary(divide_CReal),
+            '/': unary(inv_CReal),
+            'pexp': unary(prescaled_exp_CReal),
+            'pcos': unary(prescaled_cos_CReal),
+            'iatan': unary(integral_atan_CReal),
+            'pln': unary(prescaled_ln_CReal),
+            'pasin': unary(prescaled_asin_CReal),
+            'sqrt': unary(sqrt_CReal),
+            'pi': () => CReal.PI,
+            'max': binary(max_CReal),
+            'min': binary(min_CReal),
+            'abs': unary(abs_CReal),
+            'pow': binary(pow_CReal),
+            'exp': unary(exp_CReal),
+            'cos': unary(cos_CReal),
+            'sin': unary(sin_CReal),
+            'asin': unary(asin_CReal),
+            'acos': unary(acos_CReal),
+            'ln': unary(ln_CReal),
+            's': unary(string_CReal),
+        }
+
+        const words = expr.split(' ');
+        let stack = [];
+        for(let word of words) {
+            if(word == '?') {
+                stack.push(undefined);
+            } else if(word.at()=='"') {
+                const s = word.slice(1, -1);
+                stack.push(s);
+            } else if(word.match(/^-?\d/)) {
+                stack.push(BigInt(word));
+            } else {
+                const handler = codes[word];
+                stack.push(handler());
+            }
+        }
+        return stack.pop();
+    }
+
     /** The maximum amount of time to allow an operation to run for, in milliseconds.
      *  Nested operations get different timers, so evaluating a single number might take longer than this.
      *
@@ -434,7 +498,7 @@ class CReal {
             }
             const needed_prec = a - 1;
             const this_appr = this.get_appr(needed_prec);
-            return this_appr.signum();
+            return bigIntMath.signum(this_appr);
         }
     }
 
@@ -700,7 +764,7 @@ class CReal {
      * @returns {CReal}
      */
     divide(x) {
-        return new mult_CReal(this, x.inverse());
+        return new divide_CReal(this, x);
     }
 
     /** The real number `x` if `this < 0`, or `y` otherwise.
@@ -721,7 +785,7 @@ class CReal {
      * @returns {CReal}
      */
     max(x) {
-        return this.subtract(x).select(x, this);
+        return new max_CReal(this, x);
     }
 
     /** The minimum of two constructive reals.
@@ -730,7 +794,7 @@ class CReal {
      * @returns {CReal}
      */
     min(x) {
-        return this.subtract(x).select(this, x);
+        return new min_CReal(this, x);
     }
 
     /** The absolute value of a constructive real.
@@ -739,7 +803,7 @@ class CReal {
      *  @returns {CReal}
      */
     abs() {
-        return this.select(this.negate(), this);
+        return new abs_CReal(this);
     }
 
     /** The exponential function, that is `e**this`.
@@ -747,16 +811,7 @@ class CReal {
      * @returns {CReal}
      */
     exp() {
-        const low_prec = -10;
-        const rough_appr = this.get_appr(low_prec);
-        // Handle negative arguments directly; negating and computing inverse
-        // can be very expensive.
-        if(rough_appr > 2n || rough_appr < -2n) {
-            const square_root = this.shiftRight(1).exp();
-            return square_root.multiply(square_root);
-        } else {
-            return new prescaled_exp_CReal(this);
-        }
+        return new exp_CReal(this);
     }
 
     /** To the power of x.
@@ -765,7 +820,7 @@ class CReal {
      * @returns {CReal}
      */
     pow(x) {
-        return x.multiply(this.ln()).exp();
+        return new pow_CReal(this, x);
     }
 
     /** The trigonometric cosine function.
@@ -773,24 +828,7 @@ class CReal {
      * @returns {CReal}
      */
     cos() {
-        const halfpi_multiples = this.divide(CReal.PI).get_appr(-1);
-        const abs_halfpi_multiples = bigIntMath.abs(halfpi_multiples);
-        if(abs_halfpi_multiples >= 2n) {
-            // Subtract multiples of PI
-            const pi_multiples = CReal.scale(halfpi_multiples, -1)
-            const adjustment = CReal.PI.multiply(CReal.valueOf(pi_multiples));
-            if((pi_multiples & 1n) != 0n) {
-                return this.subtract(adjustment).cos().negate();
-            } else {
-                return this.subtract(adjustment).cos();
-            }
-        } else if(bigIntMath.abs(this.get_appr(-1)) >= 2n) {
-            // Scale further with double angle formula
-            const cos_half = this.shiftRight(1).cos();
-            return cos_half.multiply(cos_half).shiftLeft(1).subtract(CReal.ONE);
-        } else {
-            return new prescaled_cos_CReal(this);
-        }
+        return new cos_CReal(this);
     }
 
     /** The trigonometric sine function.
@@ -798,7 +836,7 @@ class CReal {
      * @returns {CReal}
      */
     sin() {
-        return CReal.half_pi.subtract(this).cos();
+        return new sin_CReal(this);
     }
 
     /** The trigonometric arc (inverse) sine function.
@@ -806,15 +844,7 @@ class CReal {
      * @returns {CReal}
      */
     asin() {
-        const rough_appr = this.get_appr(-10);
-        if(rough_appr > 750n) { // 1/sqrt(2) + a bit
-            const new_arg = CReal.ONE.subtract(this.multiply(this)).sqrt();
-            return new_arg.acos();
-        } else if(rough_appr < -750n) {
-            return this.negate().asin().negate();
-        } else {
-            return new prescaled_asin_CReal(this);
-        }
+        return new asin_CReal(this);
     }
 
     /** The trigonometric arc (incerse) cosine function.
@@ -822,7 +852,7 @@ class CReal {
      * @returns {CReal}
      */
     acos() {
-        return CReal.half_pi.subtract(this.asin());
+        return new acos_CReal(this);
     }
 
     /** The natural (base e) logarithm.
@@ -830,25 +860,7 @@ class CReal {
      * @returns {CReal}
      */
     ln() {
-        const low_prec = -4;
-        const rough_appr = this.get_appr(low_prec); // In sixteenths
-        if(rough_appr < 0n) {
-            throw new Error("ln(negative)");
-        }
-        if(rough_appr <= CReal.low_ln_limit) {
-            return this.inverse().ln().negate();
-        }
-        if(rough_appr >= CReal.high_ln_limit) {
-            if(rough_appr <= CReal.scaled_4) {
-                const quarter = this.sqrt().sqrt().ln();
-                return quarter.shiftLeft(2);
-            } else {
-                const extra_bits = bitLength(rough_appr) - 3;
-                const scaled_result = this.shiftRight(extra_bits).ln();
-                return scaled_result.add(CReal.valueOf(extra_bits).multiply(CReal.ln2));
-            }
-        }
-        return this.simple_ln();
+        return new ln_CReal(this);
     }
 
     /** The square root of a constructive real.
@@ -903,6 +915,10 @@ class int_CReal extends CReal {
         this.value = n;
     }
 
+    serialize() {
+        return `${this.value} i`;
+    }
+
     approximate(p) {
         return CReal.scale(this.value, -p);
     }
@@ -920,6 +936,10 @@ class assumed_int_CReal extends CReal {
     constructor(x) {
         super();
         this.value = x;
+    }
+
+    serialize() {
+        return `${this.value} assumed_int`
     }
 
     approximate(p) {
@@ -946,6 +966,10 @@ class add_CReal extends CReal {
         this.op2 = y;
     }
 
+    serialize() {
+        return `${this.op1.serialize()} ${this.op2.serialize()} +`
+    }
+
     approximate(p) {
         return CReal.scale(this.op1.get_appr(p-2) + this.op2.get_appr(p-2), -2);
     }
@@ -966,6 +990,11 @@ class shifted_CReal extends CReal {
         this.count = n;
     }
 
+
+    serialize() {
+        return `${this.op.serialize()} ${this.count} <`;
+    }
+
     approximate(p) {
         return this.op.get_appr(p - this.count);
     }
@@ -982,6 +1011,11 @@ class neg_CReal extends CReal {
     constructor(x) {
         super();
         this.op = x;
+    }
+
+
+    serialize() {
+        return `${this.op.serialize()} -`;
     }
 
     negate() {
@@ -1012,6 +1046,11 @@ class select_CReal extends CReal {
         this.selector_sign = bigIntMath.signum(this.selector.get_appr(-20));
         this.op1 = x;
         this.op2 = y;
+    }
+
+
+    serialize() {
+        return `${this.op2.serialize()} ${this.op1.serialize()} ${this.selector.serialize()} select`;
     }
 
     approximate(p) {
@@ -1052,6 +1091,11 @@ class mult_CReal extends CReal {
         super();
         this.op1 = x;
         this.op2 = y;
+    }
+
+
+    serialize() {
+        return `${this.op1.serialize()} ${this.op2.serialize()} *`;
     }
 
     approximate(p) {
@@ -1106,6 +1150,11 @@ class inv_CReal extends CReal {
         super();
         this.op = x;
     }
+    
+
+    serialize() {
+        return `${this.op.serialize()} /`;
+    }
 
     approximate(p) {
         const msd = this.op.msd();
@@ -1159,6 +1208,11 @@ class prescaled_exp_CReal extends CReal {
         this.op = x;
     }
 
+
+    serialize() {
+        return `${this.op.serialize()} pexp`;
+    }
+
     approximate(p) {
         if(p >= 1) {
             return 0n;
@@ -1196,6 +1250,11 @@ class prescaled_cos_CReal extends slow_CReal {
     constructor(x) {
         super();
         this.op = x;
+    }
+
+
+    serialize() {
+        return `${this.op.serialize()} pcos`;
     }
 
     approximate(p) {
@@ -1242,6 +1301,11 @@ class integral_atan_CReal extends slow_CReal {
     constructor(x) {
         super();
         this.op = x;
+    }
+
+
+    serialize() {
+        return `${this.op.serialize()} iatan`;
     }
 
     approximate(p) {
@@ -1296,6 +1360,11 @@ class prescaled_ln_CReal extends slow_CReal {
         this.op = x;
     }
 
+
+    serialize() {
+        return `${this.op.serialize()} pln`;
+    }
+
     /** Compute an approximation of ln(1+x) to precision
      *  prec. This assumes |x| < 1/2.
      *  It uses a Taylor series expansion.
@@ -1348,6 +1417,11 @@ class prescaled_asin_CReal extends slow_CReal {
     constructor(x) {
         super();
         this.op = x;
+    }
+
+
+    serialize() {
+        return `${this.op.serialize()} pasin`;
     }
 
     approximate(p) {
@@ -1451,6 +1525,11 @@ class sqrt_CReal extends CReal {
         }
     }
 
+
+    serialize() {
+        return `${this.op.serialize()} sqrt`;
+    }
+
     static fp_prec = 50;
         // Conservative estimate of number of
         // significant bits in double precision
@@ -1499,29 +1578,6 @@ class sqrt_CReal extends CReal {
 }
 
 
-/** Return the constructive real number corresponding to the given textual representation.
- *
- * @private
- * @param {string} s
- */
-CReal.valueOf_string = function(s) {
-    s = s.trim();
-    const len = s.length;
-    let start_pos = 0;
-    let point_pos;
-    let fraction;
-    point_pos = s.indexOf('.');
-    if(point_pos == -1) {
-        point_pos = len;
-        fraction = '0';
-    } else {
-        fraction = s.slice(point_pos+1);
-    }
-    const whole = s.slice(0,point_pos);
-    const scaled_result = BigInt(whole+fraction);
-    const divisor = 10n ** BigInt(fraction.length);
-    return CReal.valueOf(scaled_result).divide(CReal.valueOf(divisor));
-}
 
 /** Construct a CReal from a number or string.
  *
@@ -1539,30 +1595,235 @@ CReal.valueOf = function(n) {
     if(typeof n == 'bigint') {
         return new int_CReal(n);
     } else if(typeof n == 'string' || n%1 != 0) {
-        return CReal.valueOf_string(n+'');
+        return new string_CReal(n+'');
     } else {
         return new int_CReal(BigInt(n));
     }
+}
 
-    /** Copied from the Java BigInteger version - is this needed in JS?
-     */
-    /*
-    const negative = n < 0;
-    const bits = Math.abs(n);
-    let mantissa = bits & 0xfffffffffffff;
-    const biased_exp = bits >> 52;
-    const exp = biased_exp - 1075;
-    if(biased_exp != 0) {
-        mantissa += (1 << 52);
-    } else {
-        mantissa <<= 1;
+/** 
+ * Many operations are implemented by performing a sequence of more basic operations on the inputs.
+ * In order to serialize these efficiently, we need to keep track of what the operation really was.
+ * These wrapper classes delegate their operation to the value produced by the `make_value` method, but can have their own `serialize` method.
+ */
+class wrapper_CReal extends CReal {
+    serializer_code = '???';
+
+    make_value() {
+        throw(new Error(`make_value is not implemented for ${this.constructor.name}`));
     }
-    let result = CReal.valueOf(BigInt(mantissa)).shiftLeft(exp);
-    if(negative) {
-        result = result.negate();
+
+    get value() {
+        if(this._value === undefined) {
+            const v = this._value = this.make_value();
+            Object.defineProperty(this, 'appr_valid', { get() { return v.appr_valid; } });
+            Object.defineProperty(this, 'min_prec', { get() { return v.min_prec; } });
+            Object.defineProperty(this, 'max_appr', { get() { return v.max_appr; } });
+        }
+        return this._value;
     }
-    return result;
-    */
+
+    get_appr(precision) {
+        return this.value.get_appr(precision);
+    }
+
+    approximate(p) {
+        return this.value.approximate(p);
+    }
+}
+
+class one_wrapper_CReal extends wrapper_CReal {
+    constructor(x) {
+        super();
+        this.op = x;
+    }
+
+    serialize() {
+        return `${this.op.serialize()} ${this.serializer_code}`;
+    }
+
+}
+
+class two_wrapper_CReal extends wrapper_CReal {
+    constructor(x, y) {
+        super();
+        this.op1 = x;
+        this.op2 = y;
+    }
+
+    serialize() {
+        return `${this.op1.serialize()} ${this.op2.serialize()} ${this.serializer_code}`;
+    }
+}
+
+class max_CReal extends two_wrapper_CReal {
+    serializer_code = 'max';
+
+    make_value() {
+        return this.op1.subtract(this.op2).select(this.op2, this.op1);
+    }
+}
+
+class min_CReal extends two_wrapper_CReal {
+    serializer_code = 'min';
+
+    make_value() {
+        return this.op1.subtract(this.op2).select(this.op1, this.op2);
+    }
+}
+
+class abs_CReal extends one_wrapper_CReal {
+    serializer_code = 'abs';
+    make_value() {
+        return this.op.select(this.op.negate(), this.op);
+    }
+}
+
+class divide_CReal extends two_wrapper_CReal {
+    serializer_code = '÷';
+    make_value() {
+        return new mult_CReal(this.op1, this.op2.inverse());
+    }
+}
+
+class exp_CReal extends one_wrapper_CReal {
+    serializer_code = 'exp';
+
+    make_value() {
+        const low_prec = -10;
+        const rough_appr = this.op.get_appr(low_prec);
+        // Handle negative arguments directly; negating and computing inverse
+        // can be very expensive.
+        if(rough_appr > 2n || rough_appr < -2n) {
+            const square_root = this.op.shiftRight(1).exp();
+            return square_root.multiply(square_root);
+        } else {
+            return new prescaled_exp_CReal(this.op);
+        }
+    }
+}
+
+class pow_CReal extends two_wrapper_CReal {
+    serializer_code = 'pow'
+
+    make_value() {
+        return this.op2.multiply(this.op1.ln()).exp();
+    }
+}
+
+class cos_CReal extends one_wrapper_CReal {
+    serializer_code = 'cos';
+
+    make_value() {
+        const halfpi_multiples = this.op.divide(CReal.PI).get_appr(-1);
+        const abs_halfpi_multiples = bigIntMath.abs(halfpi_multiples);
+        if(abs_halfpi_multiples >= 2n) {
+            // Subtract multiples of PI
+            const pi_multiples = CReal.scale(halfpi_multiples, -1)
+            const adjustment = CReal.PI.multiply(CReal.valueOf(pi_multiples));
+            if((pi_multiples & 1n) != 0n) {
+                return this.op.subtract(adjustment).cos().negate();
+            } else {
+                return this.op.subtract(adjustment).cos();
+            }
+        } else if(bigIntMath.abs(this.op.get_appr(-1)) >= 2n) {
+            // Scale further with double angle formula
+            const cos_half = this.op.shiftRight(1).cos();
+            return cos_half.multiply(cos_half).shiftLeft(1).subtract(CReal.ONE);
+        } else {
+            return new prescaled_cos_CReal(this.op);
+        }
+    }
+}
+
+class sin_CReal extends one_wrapper_CReal {
+    serializer_code = 'sin';
+
+    make_value() {
+        return CReal.half_pi.subtract(this.op).cos();
+    }
+}
+
+class asin_CReal extends one_wrapper_CReal {
+    serializer_code = 'asin';
+
+    make_value() {
+        const rough_appr = this.op.get_appr(-10);
+        if(rough_appr > 750n) { // 1/sqrt(2) + a bit
+            const new_arg = CReal.ONE.subtract(this.op.multiply(this.op)).sqrt();
+            return new_arg.acos();
+        } else if(rough_appr < -750n) {
+            return this.op.negate().asin().negate();
+        } else {
+            return new prescaled_asin_CReal(this.op);
+        }
+    }
+}
+
+class acos_CReal extends one_wrapper_CReal {
+    serializer_code = 'acos';
+    
+    make_value() {
+        return CReal.half_pi.subtract(this.op.asin());
+    }
+}
+
+class ln_CReal extends one_wrapper_CReal {
+    serializer_code = 'ln';
+
+    make_value() {
+        const low_prec = -4;
+        const rough_appr = this.op.get_appr(low_prec); // In sixteenths
+        if(rough_appr < 0n) {
+            throw new Error("ln(negative)");
+        }
+        if(rough_appr <= CReal.low_ln_limit) {
+            return this.op.inverse().ln().negate();
+        }
+        if(rough_appr >= CReal.high_ln_limit) {
+            if(rough_appr <= CReal.scaled_4) {
+                const quarter = this.op.sqrt().sqrt().ln();
+                return quarter.shiftLeft(2);
+            } else {
+                const extra_bits = bitLength(rough_appr) - 3;
+                const scaled_result = this.op.shiftRight(extra_bits).ln();
+                return scaled_result.add(CReal.valueOf(extra_bits).multiply(CReal.ln2));
+            }
+        }
+        return this.op.simple_ln();
+    }
+}
+
+/** A constructive real number corresponding to a textual representation.
+ */
+class string_CReal extends wrapper_CReal {
+    constructor(s) {
+        super();
+        this.s = s;
+    }
+
+    make_value() {
+        const s = this.s.trim();
+        const len = s.length;
+        let start_pos = 0;
+        let point_pos;
+        let fraction;
+        point_pos = s.indexOf('.');
+        if(point_pos == -1) {
+            point_pos = len;
+            fraction = '0';
+        } else {
+            fraction = s.slice(point_pos+1);
+        }
+        const whole = s.slice(0,point_pos);
+        const scaled_result = BigInt(whole+fraction);
+        const divisor = 10n ** BigInt(fraction.length);
+        return CReal.valueOf(scaled_result).divide(CReal.valueOf(divisor));
+    }
+
+    serialize() {
+        return `"${this.s}" s`;
+    }
 }
 
 /** Zero.
@@ -1616,6 +1877,11 @@ class gl_pi_CReal extends slow_CReal {
         super();
         this.b_prec = [null];
         this.b_val = [null];
+    }
+
+
+    serialize() {
+        return `pi`;
     }
 
     static TOLERANCE = 4n;
