@@ -286,7 +286,7 @@ class CReal {
         return this.min_prec + length - 1;
     }
 
-    /** Return ths position of the most significant digit (msd) - this version may return `Number.MIN_SAFE_INTEGER` if the correct answer is `< n`.
+    /** Return the position of the most significant digit (msd) - this version may return `Number.MIN_SAFE_INTEGER` if the correct answer is `< n`.
      *
      * If `n` is not given, it uses `iter_msd` to eventually return a correct answer, unless the constructive real is zero, when it either loops forever or throws a precision overflow error.
      * 
@@ -315,7 +315,7 @@ class CReal {
      */
     iter_msd(n) {
         let prec = 0;
-        for(let prec = 0; prec > n+30; prec = (prec*3)/2 - 16) {
+        for(let prec = 0; prec > n+30; prec = Math.ceil((prec*3)/2) - 16) {
             let msd = this.msd(prec);
             if(msd != Number.MIN_SAFE_INTEGER) {
                 return msd;
